@@ -2,13 +2,24 @@ namespace PartsAccounting;
 
 public class Part
 {
-    public string Name { get; set; }
-    private int price;
-    private int count;
-
+    
+    private string name = "";
+    private int price = 0;
+    private int count = 0;
+    private int id = 0;
+    
+    public string Name
+    {
+        get => name;
+        set
+        {
+            if (!value.Equals(null) && !value.Trim().Equals(""))
+                name = value;
+        } 
+    }
     public int Price
     {
-        get { return price; }
+        get => price;
         set
         {
             if (value <= 0)
@@ -19,7 +30,7 @@ public class Part
     
     public int Count
     {
-        get { return count; }
+        get => count;
         set
         {
             if (value < 0)
@@ -28,17 +39,28 @@ public class Part
         }
     }
 
-    public Part(string name, int price, int count)
+    public int ID
+    {
+        get => id;
+        set
+        {
+            if (value <= 0)
+                return;
+            id = value;
+        }
+    }
+    public Part(string name, int price, int count, int id)
     {
         Name = name;
         Price = price;
         Count = count;
+        ID = id;
     }
     
     protected Part(){}
 
     public override string ToString()
     {
-        return $"{Name} | {Price} | {Count} | {Price * Count}";
+        return $"{ID} | {Name} | {Price} | {Count} | {Price * Count}";
     }
 }

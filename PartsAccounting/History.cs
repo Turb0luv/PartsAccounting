@@ -13,13 +13,13 @@ public class History
 
     public void AddPart(string action)
     {
-        _actions.Add(action);
+        _actions.Add(action + " | " + DateTime.Now);
     }
     
     public override string ToString()
     {
         if (_actions.Count == 0) return "История пуста";
-        string str = "Номенклатура | Цена | Кол-во | Сумма | Действие\n\n";
+        string str = "ID | Номенклатура | Цена | Кол-во | Сумма | Действие | Время\n\n";
         foreach (var action in _actions)
         {
             str += action + "\n";

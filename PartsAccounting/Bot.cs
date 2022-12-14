@@ -4,13 +4,13 @@ using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
-static class ViewTelegram
+static class Bot
     {
         static ITelegramBotClient bot = new TelegramBotClient("5715651192:AAHvCCg-3KZmA3BOtFzqxCAjiTDQEzq7xEg");
 
         static void Main(string[] args)
         {
-            ChooseCommand.Deserialize();
+            Commands.Deserialize();
 
             Console.WriteLine("Запущен бот " + bot.GetMeAsync().Result.FirstName);
 
@@ -29,7 +29,7 @@ static class ViewTelegram
             );
 
             Console.ReadLine();
-            ChooseCommand.Serialize();
+            Commands.Serialize();
         }
         
         private static async Task Update(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
@@ -38,7 +38,7 @@ static class ViewTelegram
 
             if (update.Type == UpdateType.CallbackQuery)
             {
-               ChooseCommand.HandleCallbackQuery(update.CallbackQuery);
+               Commands.HandleCallbackQuery(update.CallbackQuery);
                 return;
             }
             
@@ -46,7 +46,7 @@ static class ViewTelegram
             
             if (update.Type == UpdateType.Message && update.Message?.Text != null)
             {
-                ChooseCommand.HandlerMessage(update.Message);
+                Commands.HandlerMessage(update.Message);
                 return;
             }
         }

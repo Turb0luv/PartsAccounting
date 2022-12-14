@@ -5,7 +5,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace PartsAccounting;
 
-public static class ChooseCommand
+public static class Commands
 {
     private static Actions _actions = new (new List<Part>(), new History());
 
@@ -26,7 +26,7 @@ public static class ChooseCommand
         History history = new History();
         XmlSerializer xmlSerializer = new XmlSerializer(typeof(List<string>));
         
-        XmlReader textReader = XmlReader.Create(@"D:\Projects\C#\PartsAccounting\PartsAccounting\base1.xml");
+        XmlReader textReader = XmlReader.Create(@"D:\Projects\C#\PartsAccounting\PartsAccounting\History.xml");
         try
         {
             history = new History((List<string>)xmlSerializer.Deserialize(textReader));
@@ -44,7 +44,7 @@ public static class ChooseCommand
         List<Part> parts = new List<Part>();
         XmlSerializer xmlSerializer = new XmlSerializer(typeof(List<Part>));
         
-        XmlReader textReader = XmlReader.Create(@"D:\Projects\C#\PartsAccounting\PartsAccounting\base.xml");
+        XmlReader textReader = XmlReader.Create(@"D:\Projects\C#\PartsAccounting\PartsAccounting\Parts.xml");
         try
         {
             parts = (List<Part>)xmlSerializer.Deserialize(textReader);
@@ -59,8 +59,8 @@ public static class ChooseCommand
     }
     public static void Serialize() 
     {
-        _actions.SerialiseToXml1();
-        _actions.SerialiseToXml();
+        _actions.SerialiseToXmlHistory();
+        _actions.SerialiseToXmlParts();
     }
     
     public static void HandlerMessage(Message message)
@@ -73,7 +73,7 @@ public static class ChooseCommand
         {
             _newPart += messText;
                 
-            ViewTelegram.SendMessage(message, 
+            Bot.SendMessage(message, 
                 _actions.AddPart(_newPart), null);
             
             return;
@@ -81,7 +81,7 @@ public static class ChooseCommand
 
         if (_search == "")
         {
-            ViewTelegram.SendMessage(message,
+            Bot.SendMessage(message,
                 _actions.Display(_actions.Search(messText)), null);
                 
             _search = messText;
@@ -90,7 +90,7 @@ public static class ChooseCommand
         
         if (_deleteName == "")
         {
-            ViewTelegram.SendMessage(message,
+            Bot.SendMessage(message,
                 _actions.RemovePart(messText), null);
             _deleteName = messText;
             return;
@@ -98,19 +98,19 @@ public static class ChooseCommand
         
         if (_edit == "")
         {
-            if (!_actions.CheckName(messText))
+            if (!_actions.CheckName(messText) && !_actions.CheckNameId(messText))
             {
-                ViewTelegram.SendMessage(message,
+                Bot.SendMessage(message,
                     "Запчасти с данной номенклатурой не найдены", null);
                 _edit = "undefined";
                 return;
             }
 
             _edit = messText;
-            _buttons = ViewTelegram.GetInlineButtons(
+            _buttons = Bot.GetInlineButtons(
                 new[] {"Ред. кол-во" , "Ред. цену", "Ред. номенклатуру" });
                             
-            ViewTelegram.SendMessage(
+            Bot.SendMessage(
                 message, "Выберите параметр для редактирования", _buttons);
             return;
         }
@@ -118,7 +118,7 @@ public static class ChooseCommand
         if (_eName == "")
         {
             if(_actions.CheckName(messText)) {
-                ViewTelegram.SendMessage(message,
+                Bot.SendMessage(message,
                     "Запчасть с данной номенклатурой уже существует", null);
                 _eName = "undefined";
                 return;
@@ -152,58 +152,58 @@ public static class ChooseCommand
         switch (messText)
         {
             case "/start":
-                _buttons = ViewTelegram.GetButtons(
+                _buttons = Bot.GetButtons(
                     new[] { "Добавить", "Списать", "Провести", "Список", "Сортировка", "Поиск", "История" });
                 
-                ViewTelegram.SendMessage(message, $"Добрый день, {message.Chat.FirstName}\n" +
+                Bot.SendMessage(message, $"Добрый день, {message.Chat.FirstName}\n" +
                                                   "Выберите действие", _buttons);
                 return;
 
             case "добавить":
-                ViewTelegram.SendMessage(
+                Bot.SendMessage(
                     message, "Введите номенклатуру, цену, кол-во (Пример: Комлект_задних_стоек_Almera 130 10)", null);
                 _newPart = "";
                 return;
                 
             case "список":
-                ViewTelegram.SendMessage(
-                    message, _actions.Display(), null);
+                Bot.SendMessage(
+                    message, _actions.FinalStr(_actions.Display()), null);
                 return;
             
             case "списать":
-                ViewTelegram.SendMessage(
+                Bot.SendMessage(
                     message, "Введите номенклатуру запчасти", null);
                 _deleteName = "";
                 return;
                 
             case "сортировка":
-                _buttons = ViewTelegram.GetInlineButtons(
+                _buttons = Bot.GetInlineButtons(
                     new[] {"Цена", "Кол-во","Номенклатура" });
                     
-                ViewTelegram.SendMessage(
+                Bot.SendMessage(
                     message, "Выберите критерий для сортировки", _buttons);
                 return;
                 
             case "поиск":
-                ViewTelegram.SendMessage(
+                Bot.SendMessage(
                     message, "Введите любые данные", null);
                 _search = "";
                 return;
             
             case "провести":
-                ViewTelegram.SendMessage(
+                Bot.SendMessage(
                     message, "Введите номенклатуру запчасти", null);
                 _edit = "";
                 return;
             
             case "история":
-                ViewTelegram.SendMessage(
+                Bot.SendMessage(
                     message, _actions.DisplayH(), null);
                 return;
         }
 
-        _buttons = ViewTelegram.GetButtons(new[] { "/start", "", "", "", "", "", "" });
-        ViewTelegram.SendMessage(message, "Такой команды нет", _buttons);
+        _buttons = Bot.GetButtons(new[] { "/start", "", "", "", "", "", "" });
+        Bot.SendMessage(message, "Такой команды нет", _buttons);
     }
     public static void HandleCallbackQuery(CallbackQuery? callbackQuery)
     {
@@ -216,36 +216,36 @@ public static class ChooseCommand
             case "номенклатура": 
                 _actions.SortByName();
                 
-                ViewTelegram.SendMessage(
+                Bot.SendMessage(
                         callbackQuery.Message, "Сортировка по номенклатуре выполнена.", null);
                 return;
                 
             case "цена": 
                 _actions.SortByPrice();
-                ViewTelegram.SendMessage(
+                Bot.SendMessage(
                         callbackQuery.Message,"Сортировка по цене выполнена.", null);
                 return;
                 
             case "кол-во": 
                 _actions.SortByCount();
-                ViewTelegram.SendMessage(
+                Bot.SendMessage(
                         callbackQuery.Message, "Сортировка по кол-ву выполнена.", null);
                 return;
 
             case "ред. номенклатуру":
-                ViewTelegram.SendMessage(callbackQuery.Message,
+                Bot.SendMessage(callbackQuery.Message,
                     "Введите новую номеклатуру", null);
                 _eName = "";
                 return;
             
             case "ред. цену":
-                ViewTelegram.SendMessage(callbackQuery.Message,
+                Bot.SendMessage(callbackQuery.Message,
                     "Введите новую цену", null);
                 _ePrice = "";
                 return;
             
             case "ред. кол-во":
-                ViewTelegram.SendMessage(callbackQuery.Message,
+                Bot.SendMessage(callbackQuery.Message,
                     "Введите новое кол-во", null);
                 _eCount = "";
                 return;
@@ -253,7 +253,7 @@ public static class ChooseCommand
     }
     private static void MessageDone(Message message)
     {
-        ViewTelegram.SendMessage(
+        Bot.SendMessage(
             message, "Готово", null);
     }
 }

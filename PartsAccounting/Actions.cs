@@ -20,7 +20,7 @@ public class Actions
     public void SortByPrice() =>
         _parts.Sort((x, y) => x.Price.CompareTo(y.Price));
     
-    public void SortByCount() =>
+    public void SortByCount() => 
         _parts.Sort((x, y) => x.Count.CompareTo(y.Count));
 
     public string AddPart(string str)
@@ -33,10 +33,32 @@ public class Actions
             if (Int32.Parse(st[1]) <= 0 || Int32.Parse(st[2]) <= 0)
                 return "Введены неверные числовые значения";
 
-            if (CheckName(st[0]))
-                return "Запчастей с такой номенклатурой не существует";
+            if (CheckName(st[0]) || CheckNameId(st[0]))
+            {
+                Part par;
+                try
+                {
+                    par = ChoosePartId(Int32.Parse(st[0]));
+                }
+                catch
+                {
+                    par = ChoosePart(st[0]);
+                }
 
-            Part part = new Part(st[0], Int32.Parse(st[1]), Int32.Parse(st[2]));
+                if(par.Price > Int32.Parse(st[1]))
+                    EditPrice(st[1], st[0]);
+                EditCount(st[2], st[0]);
+                return "Существующая запчасть изменена";
+            }
+
+            var rand = new Random();
+            int id;
+            do
+            {
+                id = rand.Next(1000, 10000);
+            } while (CheckID(id));
+            
+            Part part = new Part(st[0].Replace('_', ' '), Int32.Parse(st[1]), Int32.Parse(st[2]), id);
             _parts.Add(part);
             AddHistory(part + " | Добавлен");
         }
@@ -48,6 +70,7 @@ public class Actions
         return "Запчасть успешно добавлена";
     }
     
+    public bool CheckID(int id) => _parts.Any(part => part.ID == id);
 
     private void AddHistory(string str)
     {
@@ -57,7 +80,16 @@ public class Actions
     {
         if(_parts.Count == 0) return "Запчасти отсутствуют";
 
-        foreach (var part in _parts.Where(part => part.Name.Equals(name)))
+        Part part;
+        try
+        {
+            part = ChoosePartId(Int32.Parse(name));
+        }
+        catch
+        {
+            part = ChoosePart(name);
+        }
+        if(part != null)
         {
             _parts.Remove(part);
             AddHistory(part + " | Удалено");
@@ -68,19 +100,13 @@ public class Actions
         return "Запчастей с такой номенклатурой не существует";
     }
 
-    public string Display()
-    {
-        return Display(_parts);
-    }
-    public string DisplayH()
-    {
-        return _history.ToString();
-    }
+    public string Display() => Display(_parts);
+    public string DisplayH() => _history.ToString();
     public string Display<T>(List<T> parts)
     {
         if(parts.Count == 0) return "Запчасти отсутствуют.";
         
-        string str = "Номенклатура | Цена | Кол-во | Сумма\n\n";
+        string str = "ID | Номенклатура | Цена | Кол-во | Сумма\n\n";
         int i = 0;
              
         foreach (var part in parts) {
@@ -89,6 +115,10 @@ public class Actions
 
         return str;
     }
+
+    public string FinalStr(string final) => final + $"\nОбщее кол-во: {SumCount()}\nОбщая сумма: {SumPart()}";
+    private string SumPart() => _parts.Sum(part => part.Price * part.Count).ToString();
+    private string SumCount() => _parts.Sum(part => part.Count).ToString();
 
     public List<Part> Search(string str)
     {
@@ -111,57 +141,80 @@ public class Actions
         return prt;
     }
 
-    private Part ChoosePart(string name)
-    {
-        return _parts.Where(part => part.Name.Equals(name)).FirstOrDefault();
-    }
+    private Part ChoosePart(string name) => _parts.Where(part => part.Name.Equals(name)).FirstOrDefault();
+
+    private Part ChoosePartId(int id) => _parts.FirstOrDefault(part => part.ID == id);
     public void EditName(string newName, string name)
     {
-        Part part = ChoosePart(name);
+        Part part;
+        try
+        {
+            part = ChoosePartId(Int32.Parse(name));
+        }
+        catch
+        {
+            part = ChoosePart(name);
+        }
         part.Name = newName;
         AddHistory(part.ToString() + " | Ред. номенкл.");
     }
     
     public void EditPrice(string a, string name)
     {
-        Part part = ChoosePart(name);
+        Part part;
+        try
+        {
+            part = ChoosePartId(Int32.Parse(name));
+        }
+        catch
+        {
+            part = ChoosePart(name);
+        }
         int price = 0;
         try
         {
             price = Int32.Parse(a);
         } catch {return;}
 
-        part.Price = price;
+        part.Price += price;
         AddHistory(part.ToString() + " | Ред. цена");
     }
 
     public void EditCount(string pop, string name)
     {
-        Part part = ChoosePart(name);
+        Part part;
+        try
+        {
+            part = ChoosePartId(Int32.Parse(name));
+        }
+        catch
+        {
+            part = ChoosePart(name);
+        }
         int count = 0;
         try
         {
             count = Int32.Parse(pop);
         } catch {return;}
 
-        part.Count = count;
+        part.Count += count;
         AddHistory(part.ToString() + " | Ред. кол-во.");
     }
     
-    public bool CheckName(string name) =>
-        _parts.Any(part => part.Name.ToLower() == name);
+    public bool CheckName(string name) => _parts.Any(part => part.Name.ToLower() == name);
+    public bool CheckNameId(string name) => _parts.Any(part => part.ID.ToString().Trim() == name);
     
-    public void SerialiseToXml()
+    public void SerialiseToXmlParts()
     {
         XmlSerializer xmlSerializer = new XmlSerializer(typeof(List<Part>));
-        StreamWriter write = new StreamWriter(@"D:\Projects\C#\PartsAccounting\PartsAccounting\base.xml");
+        StreamWriter write = new StreamWriter(@"D:\Projects\C#\PartsAccounting\PartsAccounting\Parts.xml");
         xmlSerializer.Serialize(write, _parts);
     }
     
-    public void SerialiseToXml1()
+    public void SerialiseToXmlHistory()
     { 
         XmlSerializer xmlSerializer = new XmlSerializer(typeof(List<string>));
-        StreamWriter write = new StreamWriter(@"D:\Projects\C#\PartsAccounting\PartsAccounting\base1.xml");
+        StreamWriter write = new StreamWriter(@"D:\Projects\C#\PartsAccounting\PartsAccounting\History.xml");
         xmlSerializer.Serialize(write, _history._actions);
     }
 }
